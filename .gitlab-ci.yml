@@ -69,7 +69,7 @@ VM's Init-configuration:
 #---------------
 # userAdd-yc.yml
 #---------------
-Add new users and keys (Yandex-Cloud VM's):
+Add new users and keys:
   stage: INIT
   extends: .prepare
   script:
