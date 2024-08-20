@@ -1,0 +1,26 @@
+---
+- name: "#=== 1.1 Create admin group"
+  group:
+    name: "admin"
+    state: "present"
+  become: true
+- name: "#=== 1.2 Create user accounts"
+  user:
+    name: "{{ item }}"
+    groups: "admin"
+    shell: /bin/bash
+  with_items: "{{ sudo_users }}"
+  become: true
+- name: "#=== 1.3 Add authorized keys"
+  authorized_key:
+    user: "{{ item }}"
+    key: "{{ lookup('file', item + '.key.pub') }}"
+  with_items: "{{ sudo_users }}"
+  become: true
+- name: "#=== 1.4 Allow adminx sudo_users to sudo without a password"
+  lineinfile:
+    dest: "/etc/sudoers"
+    state: "present"
+    regexp: "^%admin"
+    line: "%admin ALL=(ALL) NOPASSWD: ALL"
+  become: true

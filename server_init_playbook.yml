@@ -1,0 +1,5 @@
+---
+- name: server_init playbook
+  hosts: ubuntu_selectel
+  roles: 
+    - name: server_init

@@ -1,0 +1,80 @@
+#------------------------
+# Zabbix-Server Config  
+# https://docs.ansible.com/ansible/2.10/collections/community/zabbix/zabbix_host_module.html
+
+- name: "#=========== 1.0 Create/Update monitoring hosts on Zabbix-Server"
+  hosts: 127.0.0.1 
+  tasks:
+    - name: "#=== 1.1 Set API token"
+      ansible.builtin.set_fact:
+        ansible_zabbix_auth_key: <zabbix api key> #Ansible user API key
+    - name: "#=== 1.2 Create/Update Linux hosts"
+      vars:
+        ansible_host: <zabbix host> #Zabbix-Server IP
+        ansible_network_os: community.zabbix.zabbix
+        ansible_connection: httpapi
+        ansible_httpapi_port: 443
+        ansible_httpapi_use_ssl: true
+        ansible_httpapi_validate_certs: false
+        ansible_zabbix_url_path: ''
+      with_items:
+        - "{{ groups['zabbix_agents'] }}"
+      community.zabbix.zabbix_host:
+        host_groups: 
+          - Managed by Ansible
+        link_templates: "{{ hostvars[item].templates }}"
+        host_name: "{{ item }}"
+        interfaces:
+          - type: "agent"
+            dns: "{{ item }}"
+            useip: 0 #Use DNS instead
+            main: 1
+    - name: "#=== 1.3 Create/Update Zabbix-Server hosts"
+      vars:
+        ansible_host: <zabbix host> #Zabbix-Server IP
+        ansible_network_os: community.zabbix.zabbix
+        ansible_connection: httpapi
+        ansible_httpapi_port: 443
+        ansible_httpapi_use_ssl: true
+        ansible_httpapi_validate_certs: false
+        ansible_zabbix_url_path: ''
+      with_items:
+        - "{{ groups['zabbix_servers'] }}"
+      community.zabbix.zabbix_host:
+        host_groups: 
+          - Managed by Ansible
+          - Zabbix servers
+        link_templates: "{{ hostvars[item].templates }}"
+        host_name: "{{ item }}"
+        interfaces:
+          - type: "agent"
+            dns: "{{ item }}"
+            useip: 0 #Use DNS instead
+            main: 1
+    - name: "#=== 1.4 Create/Update hosts for monitoring production environment"
+      vars:
+        ansible_host: <zabbix host> #Zabbix-Server IP
+        ansible_network_os: community.zabbix.zabbix
+        ansible_connection: httpapi
+        ansible_httpapi_port: 443
+        ansible_httpapi_use_ssl: true
+        ansible_httpapi_validate_certs: false
+        ansible_zabbix_url_path: ''
+      with_items:
+        - "{{ groups['prod_web_monitoring'] }}"
+      community.zabbix.zabbix_host:
+        host_groups: 
+          - Managed by Ansible
+        link_templates: 
+          - Web monitoring
+        host_name: "{{ item }}"
+        interfaces:
+          - type: "agent"
+            dns: "{{ item }}"
+            useip: 0 #Use DNS instead
+            main: 1
+        macros:
+        - macro: "{$URI}"
+          value: "{{ hostvars[item].uri }}"
+        - macro: "{$PROJECT_NAME}"
+          value: "{{ hostvars[item].name }}"

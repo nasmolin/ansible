@@ -1,0 +1,19 @@
+---
+- name: "#=== 2.1 Create user group"
+  group:
+    name: "users"
+    state: "present"
+  become: true
+- name: "#=== 2.2 Add users to group users"
+  with_items: "{{ users }}"
+  user:
+    name: "{{ item }}"
+    groups: users
+    append: no
+  become: true 
+- name: "#=== 2.3 Add users pub keys"
+  with_items: "{{ users }}"
+  authorized_key:
+    user: "{{ item }}"
+    key: "{{ lookup('file', item + '.key.pub') }}"
+  become: true

@@ -1,0 +1,48 @@
+#==============================================================================================================
+# Ansible worker nodes(for delegate_to purpose)
+#==============================================================================================================
+[ansible_nodes]
+vm1.subdomain.domain.com                ansible_host=10.10.10.10
+
+#==============================================================================================================
+# Main Group(OS: Ubuntu), Used by Init-server Playbook
+#==============================================================================================================
+[main_group]
+vm1.subdomain.domain.com                ansible_host=10.10.10.10     
+vm2.subdomain.domain.com                ansible_host=10.10.10.20    ansible_port=22200
+
+#==============================================================================================================
+# Install Zabbix-Agent2 and link template on Zabbix-Server
+#==============================================================================================================
+[zabbix_agents]
+vm1.subdomain.domain.com                ansible_host=10.10.10.10    templates='["Linux by Zabbix agent","ICMP Ping","web_server"]'
+[zabbix_servers]
+vm3.subdomain.domain.com                ansible_host=10.10.10.30     templates='["Linux by Zabbix agent","ICMP Ping","Zabbix server health","web_check"]'
+
+#==============================================================================================================
+# Additional production env. monitoring by zabbix web checks
+#==============================================================================================================
+[web_monitoring]
+app1.api.subdomain.domain.com               uri="/health-check"         name=app1-back                    
+app1.subdomain.domain.com                   uri="/"                     name=app1-front                             
+app2.subdomain.domain.com                   uri="/metrics"              name=app2                                  
+
+#==============================================================================================================
+# Update Certs Playbook
+#==============================================================================================================
+[web_servers]
+vm1.subdomain.domain.com                ansible_host=10.10.10.10     
+vm2.subdomain.domain.com                ansible_host=10.10.10.20    ansible_port=22200
+
+
+#==============================================================================================================
+# Unreal-Gameserver nodes (wip)
+#==============================================================================================================
+[unreal_nodes]
+vm1.subdomain.domain.com                ansible_host=10.10.10.10
+
+#==============================================================================================================
+# Gitlab-Runner nodes (wip)
+#==============================================================================================================
+[ue5_android]
+vm2.subdomain.domain.com                ansible_host=10.10.10.20    ansible_port=22200

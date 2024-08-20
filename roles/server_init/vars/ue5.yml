@@ -1,0 +1,16 @@
+---
+# vars file for server_init: ue5
+sudo_users:
+  - "ue5"
+users: []
+packages: 
+  - libgbm-dev
+  - libasound2
+  - tree
+  - mc
+  - unzip
+  - qemu-guest-agent
+  - spice-vdagent
+  - certbot
+  - resolvconf
+  - zip

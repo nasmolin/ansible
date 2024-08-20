@@ -1,0 +1,18 @@
+---
+# vars file for server_init
+sudo_users:
+  - <some sudo user>
+  - <some sudo user>
+  - <some sudo user>
+  - <some sudo user>
+users:
+  - <some user>
+packages: 
+  - tree
+  - mc
+  - unzip
+  - qemu-guest-agent
+  - spice-vdagent
+  - certbot
+  - resolvconf
+  - zip

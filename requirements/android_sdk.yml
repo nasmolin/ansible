@@ -1,0 +1,4 @@
+---
+- name: hth-android-sdk
+  src: https://github.com/hrafnthor/ansible-android-sdk.git
+  scm: git

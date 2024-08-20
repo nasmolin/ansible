@@ -1,0 +1,3 @@
+---
+# vars file for pip_install
+python_packages: []

@@ -1,0 +1,3 @@
+---
+# vars file for gitlab-runner_patch
+gitlab_runner_user: "gitlab-runner"

@@ -1,0 +1,32 @@
+#------------------------
+# Zabbix-Agent2 Installation  
+# https://galaxy.ansible.com/ui/repo/published/community/zabbix/content/role/zabbix_agent/
+#------------------------
+
+- name: "#=========== 1.0 Zabbix-agent2 installation"
+  hosts: main_group
+  tasks:
+    - name: "#=== 1.1 Remove old package, install Zabbix_Agent2 and configure"
+      vars:
+        zabbix_agent2: true
+        zabbix_agent_package_remove: true
+        zabbix_agent2_server: <zabbix host fqdn>
+        zabbix_agent2_serveractive: <zabbix host fqdn>
+        zabbix_agent_version: 6.4
+        zabbix_agent2_hostname: "{{ item }}"
+      include_role:
+        name:  community.zabbix.zabbix_agent
+      with_items:
+        - "{{ groups['zabbix_agents'] }}"
+    - name: "#=== 1.2 Install Zabbix_Agent2 on Zabbix-Server host"
+      vars:
+        zabbix_agent2: true
+        zabbix_agent_package_remove: true
+        zabbix_agent2_server: <zabbix host fqdn>
+        zabbix_agent2_serveractive: <zabbix host fqdn>
+        zabbix_agent_version: 6.4
+        zabbix_agent2_hostname: "{{ item }}"
+      include_role:
+        name:  community.zabbix.zabbix_agent
+      with_items:
+        - "{{ groups['zabbix_servers'] }}"

@@ -1,0 +1,5 @@
+---
+- name: "#=== 3.1 set timezone to Europe/Moscow"
+  timezone:
+    name: Europe/Moscow
+  become: true

@@ -1,0 +1,31 @@
+---
+- name: "Server init configure"
+  hosts: main_group
+  vars:
+    users:
+      - "master"
+  tasks:
+    - name: "Create admin group"
+      group:
+        name: "admin"
+        state: "present"
+      become: true
+    - name: "Create user accounts"
+      user:
+        name: "{{ item }}"
+        groups: "admin"
+      with_items: "{{ users }}"
+      become: true
+    - name: "Add authorized keys"
+      authorized_key:
+        user: "{{ item }}"
+        key: "{{ lookup('file', 'pub_keys/'+ item + '.key.pub') }}"
+      with_items: "{{ users }}"
+      become: true
+    - name: "Allow adminx users to sudo without a password"
+      lineinfile:
+        dest: "/etc/sudoers"
+        state: "present"
+        regexp: "^%admin"
+        line: "%admin ALL=(ALL) NOPASSWD: ALL"
+      become: true

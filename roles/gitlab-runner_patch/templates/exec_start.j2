@@ -1,0 +1,5 @@
+# Managed by Ansible
+# https://github.com/riemers/ansible-gitlab-runner/issues/277
+[Service]
+ExecStart=
+ExecStart=/usr/bin/gitlab-runner "run" "--working-directory" "/home/{{ gitlab_runner_user }}" "--config" "/etc/gitlab-runner/config.toml" "--service" "gitlab-runner" "--user" "{{ gitlab_runner_user }}"

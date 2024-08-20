@@ -1,0 +1,10 @@
+---
+# handlers file for gitlab-runner_patch
+- name: daemon reload
+  become: yes
+  command: systemctl daemon-reload
+- name: restart gitlab-runner
+  ansible.builtin.service:
+    name: gitlab-runner
+    state: restarted
+  become: yes

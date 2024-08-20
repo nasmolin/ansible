@@ -1,0 +1,14 @@
+---
+# tasks for ue5_build_from_source
+- name: Create a directory if it does not exist
+  ansible.builtin.file:
+    path: /ue5
+    owner: ue5
+    group: ue5
+    state: directory
+    mode: '0755'
+- name: Git checkout UE5
+  ansible.builtin.git:
+    repo: "https://{{ epic_games_github_user }}:{{ epic_games_github_password }}@github.com/EpicGames/UnrealEngine.git"
+    dest: /ue5
+    version: "{{ ue5_version }}-release"

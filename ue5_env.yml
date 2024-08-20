@@ -1,0 +1,89 @@
+---
+- name: "Create unix-user ue5 and install packages"
+  hosts: unreal_nodes
+  tasks:
+    - include_role:
+        role: server_init
+        vars_from: ue5.yml
+        apply: 
+          become: yes
+- name: "install gitlab-runner and registration"
+  hosts: unreal_nodes
+  roles: 
+    ### https://galaxy.ansible.com/ui/standalone/roles/riemers/ansible-gitlab-runner/documentation/
+    - name: riemers.ansible-gitlab-runner
+  vars:
+    gitlab_runner_coordinator_url: <server url>
+    gitlab_runner_registration_token_type: "registration-token"
+    gitlab_runner_no_log_secrets: yes
+    gitlab_runner_runners:
+      - name: "{{ ansible_hostname }}"
+        executor: shell
+        tags: 
+          - ue5-android
+        description: "{{ ansible_hostname }}"
+        run_untagged: false
+        concurrent_specific: "1"
+- name: "Patch gitlab-runner daemon to run from ue5 user"
+  hosts: unreal_nodes
+  roles: 
+    - name: gitlab-runner_patch
+      become: yes
+  vars:
+    - gitlab_runner_user: ue5
+- name: "Install java and java_home var"
+  hosts: unreal_nodes
+  roles:
+    - name: geerlingguy.java
+      become: yes
+      become_user: ue5
+- name: "Install python packages"
+  hosts: unreal_nodes
+  tasks:
+    - include_role:
+        role: pip_install
+        vars_from: android_sdk.yml
+        apply: 
+          become: yes
+          become_user: ue5
+- name: "Install android sdk"
+  hosts: unreal_nodes
+  roles:
+    - name: hth-android-sdk
+      become: yes
+      become_user: ue5
+  vars:
+    - android_user_home: ".android"
+    - android_adb_to_path: true
+    - android_sdkmanager_to_path: true
+    - android_sdk_bin: /usr/lib/android/bin
+    - android_sdk_home: /usr/lib/android/sdk
+    - android_cmdlinetools_bootstrap_build: 11076708
+    - android_cmdlinetools_bootstrap_checksum: "2d2d50857e4eb553af5a6dc3ad507a17adf43d115264b1afc116f95c92e5e258"
+    - android_requested_sdk:
+        # https://developer.android.com/tools/releases/build-tools
+        build_tools:
+          - version: 34.0.0
+            channel: 0
+        # https://developer.android.com/tools/releases/platforms
+        platforms:
+          - version: 35
+            channel: 0
+        # always latest
+        platform_tools:
+          channel: 0
+        # https://developer.android.com/ndk/downloads/revision_history
+        ndk:
+          - version: 27.0.12077973
+            channel: 0
+        # https://cmake.org/download/
+        cmake:
+          - version: 3.30.2
+            channel: 0
+- name: "Build UE5 from source"
+  hosts: unreal_nodes
+  tasks:
+    - include_role:
+        role: ue5_build_from_source
+        apply: 
+          become: yes

@@ -1,0 +1,173 @@
+
+stages:
+  - Build
+  - Lint
+  - INIT
+  - Gitlab-Runner
+  - Zabbix-Agent
+  - Web-Servers
+  - Unreal-Nodes
+  - Debug
+
+default:
+  tags:
+    - linux-docker
+  image: 
+    name: ${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHORT_SHA}
+
+build:
+  stage: Build
+  image: 
+    name: gcr.io/kaniko-project/executor:v1.9.1-debug
+    entrypoint: [""]
+  before_script:
+    - echo "{\"auths\":{\"${CI_REGISTRY}\":{\"auth\":\"$(printf "%s:%s" "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
+    - cat /kaniko/.docker/config.json
+    - echo "${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHORT_SHA}"
+  script:
+    - /kaniko/executor
+      --context .
+      --dockerfile Dockerfile
+      --destination "${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHORT_SHA}"
+  when: always
+
+.prepare:
+  before_script:
+    - export ANSIBLE_HOST_KEY_CHECKING=False
+    - export ANSIBLE_FORCE_COLOR=true
+    - export REGRU_USERNAME=$REGRU_USERNAME
+    - export REGRU_PASSWORD=$REGRU_PASSWORD
+    - ansible --version
+    - ansible-lint --version
+    - echo "{\"ansible_user\":\"<user>\",\"ansible_ssh_pass\":\"<password>\",\"ansible_sudo_pass\":\"<password>\"}" > args
+    - mkdir secret
+    - echo "<key>" > secret/ansible.key
+    - chmod 400 secret/ansible.key
+
+# verify syntax
+lint:
+  stage: Lint
+  extends: .prepare
+  script:
+    - ansible --version
+    - ansible-lint -v *.yml
+    - ansible-playbook --syntax-check *.yml
+  when: manual
+
+#---------------
+# init
+#---------------
+VM's Init-configuration:
+  stage: INIT
+  extends: .prepare
+  script:
+    - ansible-galaxy collection install community.general:==9.2.0
+    - ansible-galaxy collection install ansible.posix:==1.5.4
+    - ansible-playbook server_init_playbook.yml -e @args
+  when: manual
+
+#---------------
+# userAdd-yc.yml
+#---------------
+Add new users and keys (Yandex-Cloud VM's):
+  stage: INIT
+  extends: .prepare
+  script:
+    - ansible-playbook userAdd.yml --user <user> --private-key secret/ansible.key
+  when: manual
+
+#---------------
+# ping all linux selectel hosts from user ansible
+#---------------
+ping_all_servers.yml - ansible user:
+  stage: INIT
+  extends: .prepare
+  script:
+    - ansible-playbook ping_all_servers.yml --user <user> --private-key secret/ansible.key
+  when: manual
+
+#--------------
+# zabbixAgentIntallation-selectel.yml
+#--------------
+Deploy and configure Zabbix-Agents:
+  stage: Zabbix-Agent
+  extends: .prepare
+  script:
+    - ansible-galaxy collection install community.zabbix:==2.4.0
+    - ansible-playbook zabbix_agent.yml --user <user> --private-key secret/ansible.key
+  when: manual
+
+Add and configure hosts by Zabbix-Server API:
+  stage: Zabbix-Agent
+  extends: .prepare
+  script:
+    - ansible-galaxy collection install community.zabbix:==2.4.0
+    - ansible-playbook zabbix_host.yml --user <user> --private-key secret/ansible.key
+  when: manual
+
+#--------------
+# web-certs-update.yml
+#--------------
+Requests new wilcard certs and deploy it to servers:
+  stage: Web-Servers
+  extends: .prepare
+  script:
+    - ansible-playbook web-certs-update.yml --user <user> --private-key secret/ansible.key --extra-vars "regru_username=$REGRU_USERNAME regru_password=$REGRU_PASSWORD"
+  when: manual
+
+Pull(only) wilcard certs to servers:
+  stage: Web-Servers
+  extends: .prepare
+  script:
+    - ansible-playbook web-certs-update.yml --user <user> --private-key secret/ansible.key --tags pull
+  when: manual
+
+
+##########################################################################
+#================= UnrealEngine worker nodes pipeline ===================#
+##########################################################################
+ue5_env:
+  stage: Unreal-Nodes
+  extends: .prepare
+  script:
+    # collections
+    - ansible-galaxy collection install community.docker:==3.11.0
+    - ansible-galaxy collection install community.windows:=2.2.0
+    - ansible-galaxy collection install community.general:==9.2.0
+    - ansible-galaxy collection install ansible.posix:==1.5.4
+    - ansible-galaxy collection install ansible.utils
+    # roles
+    - ansible-galaxy role install riemers.ansible-gitlab-runner
+    - ansible-galaxy role install geerlingguy.java
+    # requirements
+    - ansible-galaxy install -r requirements/android_sdk.yml    
+    # play
+    - |
+      ansible-playbook ue5_env.yml \
+      --user <user> \
+      --private-key secret/ansible.key \
+      --extra-vars \
+      "gitlab_runner_registration_token=${GITLAB_ACCESS_TOKEN_OLD} \
+      epic_games_github_user=${EPIC_GAMES_GITHUB_USER} \ 
+      epic_games_github_password=${EPIC_GAMES_GITHUB_PASSWORD}" 
+  when: manual
+
+
+
+#--
+# Debug
+#--
+debug:
+  stage: Debug
+  extends: .prepare
+  script: 
+    - pwd
+    - whoami
+    - ls -la ./secret/ansible.key
+    - ls -la ./roles
+    - ls -la
+    - ansible-galaxy list
+    - ansible-galaxy collection list
+  when: manual
+  needs: ["build"]
+
